@@ -1,0 +1,38 @@
+﻿@model HomeViewModel
+@{
+    ViewBag.Title = "SSO Sample";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>@ViewBag.Title</title>
+    <link rel="stylesheet" href="~/css/Index.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="container">
+        <h2>@ViewBag.Title</h2>
+        <form method="post" action="/Home/ButtonClick" target="_blank">
+            <div>
+                <label for="targetUrl">UOF X Location:</label>
+                @Html.EditorFor(model => model.targetUrl)
+            </div>
+            <div>
+                <label for="corpCode">Corp Code:</label>
+                @Html.EditorFor(model => model.corpCode)
+            </div>
+            <div>
+                <label for="ssoName">SSO Name:</label>
+                @Html.EditorFor(model => model.ssoName)
+            </div>
+            <div>
+                <label for="account">Account:</label>
+                @Html.EditorFor(model => model.account)
+            </div>
+            <button type="submit">連線到 UOF X</button>
+        </form>
+    </div>
+</body>
+</html>

@@ -1,0 +1,51 @@
+﻿@model HomeViewModel
+@{
+    ViewBag.Title = "Url 登入範例";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>@ViewBag.Title</title>
+    <link rel="stylesheet" href="~/css/Index.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="container">
+        <h2>@ViewBag.Title</h2>
+        <form method="post" action="/Home/ButtonClick" target="_blank">
+            <div>
+                <label for="targetUrl">UOFX 站台:</label>
+                @Html.EditorFor(model => model.targetUrl)
+            </div>
+            <div>
+                <label for="corpCode">公司代號:</label>
+                @Html.EditorFor(model => model.corpCode)
+            </div>
+            <div>
+                <label for="urlLoginName">Url 登入顯示名稱:</label>
+                @Html.EditorFor(model => model.urlLoginName)
+            </div>
+            <div>
+                <label for="account">人員帳號:</label>
+                @Html.EditorFor(model => model.account)
+            </div>
+            <div>
+                @foreach (var option in Model.magicLinkOptions)
+                {
+                    <label>
+                        @Html.RadioButtonFor(model => model.selectMagicLinkType, option.Key)
+                        @option.Value
+                    </label>
+                }
+                @if (!string.IsNullOrEmpty(Model.selectMagicLinkType))
+                {
+                    @Html.EditorFor(model => model.maginLinkPayload)
+                }
+            </div>
+            <button type="submit">前往對應的頁面</button>
+        </form>
+    </div>
+</body>
+</html>
