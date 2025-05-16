@@ -1,0 +1,457 @@
+﻿@model ErpPanelViewModel
+
+@{
+    ViewBag.Title = "ERP 系統";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"]</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* body 樣式 */
+        body {
+        background-color: #f0f0f0;
+        padding: 10px;
+        height: 100vh;
+        }
+
+        /* 設定最大寬度 */
+        .container-fluid {
+        max-width: 1440px;
+        }
+
+        /* 標題列樣式 */
+        .header-card {
+        background-color: white;
+        padding: 15px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 標題樣式 */
+        .header-title {
+        font-size: 24px;
+        font-weight: bold;
+        margin: 0;
+        }
+
+        /* 卡片樣式 */
+        .card {
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        height: 100%;
+        }
+
+        /* 卡片標題 */
+        .card-title {
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: 15px;
+        }
+
+        /* 第二行卡片內容高度 */
+        .card-second-height {
+        height: calc(100vh - 480px);
+        }
+
+        /* 螢幕寬度 >= 768px 設定 max-height-md 樣式 */
+        @@media (min-width: 768px) {
+        .max-height-md {
+        max-height: 300px;
+        overflow-y: hidden;
+        }
+        }
+
+        /* 銷售比例圖樣式 */
+        .donut-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 200px;
+        }
+
+        /* 銷售趨勢圖樣式 */
+        .chart-container {
+        position: relative;
+        width: 100%;
+        }
+
+        /* 異常樣式 */
+        .exception {
+        color: #6f42c1 !important;
+        border-color: #6f42c1 !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <!-- 標題列 -->
+        <div class="header-card mb-4">
+            <h1 class="header-title">ERP 系統</h1>
+        </div>
+
+        <div class="d-flex flex-column flex-fill">
+            <!-- 第一列卡片 -->
+            <div class="row mb-4 max-height-md">
+                <!-- 銷售比例圖(示意資料) -->
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">北、中、南銷售比例</h5>
+                            <div class="donut-container">
+                                <canvas id="salesRatioChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 本月營收(示意資料) -->
+                <div class="col-md-2">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">本月營收</h5>
+                            <div class="d-flex justify-content-center align-items-center h-75">
+                                <h3 id="monthlyRevenue">$ 1,250,000</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 庫存異常(示意資料) -->
+                <div class="col-md-2">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">庫存異常</h5>
+                            <div class="d-flex justify-content-center align-items-center h-75">
+                                <h3 id="inventoryIssues">12</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 採購金額(示意資料) -->
+                <div class="col-md-2">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">採購金額</h5>
+                            <div class="d-flex justify-content-center align-items-center h-75">
+                                <h3 id="purchaseAmount">$ 450,000</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 待簽表單 -->
+                <div class="col-md-2">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">待處理表單</h5>
+                            <div class="d-flex justify-content-center align-items-center h-75">
+                                <h3 id="pendingForms">@Model.awaitingForm.PageInfo.ItemsCount</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 第二列卡片 -->
+            <div class="row flex-grow-1">
+                <!-- 銷售趨勢圖(示意資料) -->
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">銷售趨勢</h5>
+                            <div class="chart-container card-second-height">
+                                <canvas id="trendChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 未設定 ServiceKey 與 ServiceUrl 時顯示提示 -->
+                @if (!Model.IsConfig)
+                {
+                    <div class="col-md-9">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">表單資訊</h5>
+                                <div class="alert alert-warning card-second-height lh-lg p-5" role="alert">
+                                    請先完成以下設定，以取得表單資訊：<br/>
+                                    1. 至 <code>appsettings.json</code> 中設定 <code>UofxServiceKey</code> 與 <code>UofxServiceUrl</code><br />
+                                    2. 至 <code>ErpController.cs</code> 中設定 <code>_targetUrl</code>(站台網址)、<code>_corpCode</code>(公司代號)、<code>_account</code>(要查詢的帳號)<br />
+                                    3. 將 <code>ErpController.cs</code> 中「取得表單資訊 model」取消註解，並將「空白 model」註解
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <!-- 可申請表單 -->
+                    <div class="col-md-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">可申請表單</h5>
+                                @if (Model.allCanApplyForm.CategoryList != null && Model.allCanApplyForm.CategoryList.Any())
+                                {
+                                    <div class="accordion overflow-y-auto overflow-x-hidden card-second-height">
+                                        @foreach (var category in Model.allCanApplyForm.CategoryList)
+                                        {
+                                            <div class="accordion-item">
+                                                <h2 class="accordion-header">
+                                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#@category.Id" aria-expanded="false" aria-controls="@category.Id">
+                                                        @category.Category
+                                                    </button>
+                                                </h2>
+                                                <div id="@category.Id" class="accordion-collapse collapse">
+                                                    <div class="accordion-body">
+                                                        <div class="list-group list-group-flush">
+                                                            @foreach (var form in Model.allCanApplyForm.FormList)
+                                                            {
+                                                                @if (@form.CategoryId == category.Id && @form.FormCode != null)
+                                                                {
+                                                                    <form method="post" action="/Erp/ButtonClick" target="_blank">
+                                                                        <input type="hidden" name="selectMagicLinkType" value="BpmApply" />
+                                                                        <input type="hidden" name="maginLinkPayload" value="@form.FormCode" />
+                                                                        <button type="submit" class="list-group-item list-group-item-action text-start border-top-0 border-start-0 border-end-0">
+                                                                            @form.Name
+                                                                        </button>
+                                                                    </form>
+                                                                }
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <p class="text-center">目前沒有可申請表單</p>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 已申請表單 -->
+                    <div class="col-md-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">已申請表單</h5>
+                                @if (Model.applyForm.Items != null && Model.applyForm.Items.Any())
+                                {
+                                    <div class="list-group list-group-flush overflow-y-auto overflow-x-hidden card-second-height">
+                                        @foreach (var form in Model.applyForm.Items)
+                                        {
+                                            <form method="post" action="/Erp/ButtonClick" target="_blank" id="form-@form.FormSn">
+                                                <input type="hidden" name="selectMagicLinkType" value="BpmSign" />
+                                                <input type="hidden" name="maginLinkPayload" value="@form.FormSn" />
+                                                <div onclick="submitForm('@form.FormSn')" style="cursor: pointer;" class="d-flex flex-column gap-1 list-group-item list-group-item-action text-start border-top-0 border-start-0 border-end-0">
+                                                    <div class="d-flex justify-content-between gap-1">
+                                                        <div>
+                                                            <!-- 依據表單狀態設定 tag 樣式 -->
+                                                            @switch (form.TaskViewStatus)
+                                                            {
+                                                                case Ede.Uofx.PubApi.Sdk.NetStd.TaskStatus.Processing:
+                                                                    <span class="badge rounded-pill border border-primary text-primary">簽核中</span>
+                                                                    break;
+                                                                case Ede.Uofx.PubApi.Sdk.NetStd.TaskStatus.Complete:
+                                                                    <span class="badge rounded-pill bg-success text-white">已結案</span>
+                                                                    break;
+                                                                case Ede.Uofx.PubApi.Sdk.NetStd.TaskStatus.Approve:
+                                                                    <span class="badge rounded-pill border border-success text-success">通過</span>
+                                                                    break;
+                                                                case Ede.Uofx.PubApi.Sdk.NetStd.TaskStatus.Reject:
+                                                                    <span class="badge rounded-pill border border-danger text-danger">否決</span>
+                                                                    break;
+                                                                case Ede.Uofx.PubApi.Sdk.NetStd.TaskStatus.Cancel:
+                                                                    <span class="badge rounded-pill border border-secondary text-secondary">作廢</span>
+                                                                    break;
+                                                                case Ede.Uofx.PubApi.Sdk.NetStd.TaskStatus.Exception:
+                                                                    <span class="badge rounded-pill border exception">異常</span>
+                                                                    break;
+                                                                default:
+                                                                    break;
+                                                            }
+                                                            <span>@form.FormName</span>
+                                                        </div>
+                                                        <!--如果可以作廢，顯示作廢按鈕-->
+                                                        @if (@form.AllowedToCancel)
+                                                        {
+                                                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                                                    onclick="event.stopPropagation(); cancelForm('@form.FormSn')">
+                                                                作廢
+                                                            </button>
+                                                        }
+                                                    </div>
+                                                    <div class="d-flex justify-content-between">
+                                                        <span>@form.FormSn</span>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <p class="text-center">目前沒有已申請表單</p>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 待處理表單 -->
+                    <div class="col-md-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">待處理表單</h5>
+                                <div class="list-group list-group-flush">
+                                    @if (Model.awaitingForm.Items != null && Model.awaitingForm.Items.Any())
+                                    {
+                                        <div class="list-group list-group-flush overflow-y-auto overflow-x-hidden card-second-height">
+                                            @foreach (var form in Model.awaitingForm.Items)
+                                            {
+                                                <form method="post" action="/Erp/ButtonClick" target="_blank">
+                                                    <input type="hidden" name="selectMagicLinkType" value="BpmSign" />
+                                                    <input type="hidden" name="maginLinkPayload" value="@form.FormSn" />
+                                                    <button type="submit" class="d-flex flex-column gap-1 list-group-item list-group-item-action text-start border-top-0 border-start-0 border-end-0">
+                                                        <div>@form.FormName</div>
+                                                        <div>@form.FormSn</div>
+                                                    </button>
+                                                </form>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <p class="text-center">目前沒有待處理表單</p>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- loaing 動畫 -->
+    <div id="loading-overlay" class="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50 d-flex justify-content-center align-items-center z-3 d-none">
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // 作廢表單
+        function cancelForm(formSn) {
+            showLoading();
+            fetch('/Erp/CancelForm', {
+                method: 'POST',
+                body: new URLSearchParams({ FormSn: formSn })
+            }).then(response => {
+                if (response.ok) {
+                    location.reload();
+                }
+            })
+        }
+
+        // 顯示 loading
+        function showLoading() {
+            document.getElementById('loading-overlay').classList.remove('d-none');
+        }
+
+        // 隱藏 loading
+        function hideLoading() {
+            document.getElementById('loading-overlay').classList.add('d-none');
+        }
+
+        // 點擊已申請表單 div 時，觸發 submit
+        // 因為已申請表單列表中有 button，因此使用 div 來實作 submit
+        function submitForm(formSn){
+            document.getElementById('form-' + formSn).submit();
+        }
+
+        // 產生圖表
+        document.addEventListener('DOMContentLoaded', function() {
+            // 銷售比例圖(示意資料)
+            const salesRatioCtx = document.getElementById('salesRatioChart').getContext('2d');
+            const salesRatioChart = new Chart(salesRatioCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['北區', '中區', '南區'],
+                    datasets: [{
+                        data: [45, 30, 25],
+                        backgroundColor: [
+                            'rgba(54, 162, 235, 0.8)',
+                            'rgba(255, 159, 64, 0.8)',
+                            'rgba(255, 99, 132, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 159, 64, 1)',
+                            'rgba(255, 99, 132, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    },
+                    cutout: '60%'
+                }
+            });
+
+            // 銷售趨勢圖(示意資料)
+            const trendCtx = document.getElementById('trendChart').getContext('2d');
+            const trendChart = new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
+                    datasets: [{
+                        label: '銷售額',
+                        data: [650000, 700000, 690000, 750000, 810000, 950000],
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

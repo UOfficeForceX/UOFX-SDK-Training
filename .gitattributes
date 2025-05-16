@@ -1,0 +1,5 @@
+* text=auto
+*.cs text eol=lf
+*.cs diff=csharp
+*.cs linguist-language=C#
+*.cs encoding=UTF-8
