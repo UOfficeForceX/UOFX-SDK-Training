@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "SDK-OrgSample": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:10991;http://localhost:10992"
+    }
+  }
+}
